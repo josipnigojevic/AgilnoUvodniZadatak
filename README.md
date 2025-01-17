@@ -1,6 +1,6 @@
 # Complete Windows Setup for Java, Hadoop, Spark, and Python (PySpark)
 
-Below is a **comprehensive** step‐by‐step guide, **entirely in Markdown format**, for installing and configuring Java, Hadoop, Spark, and Python on **Windows**. It also covers environment variables, folder permissions, and common pitfalls. By following these steps carefully, you should end up with a fully working local setup for running PySpark jobs on Windows.
+Below is a **comprehensive** step‐by‐step guide for installing and configuring Java, Hadoop, Spark, and Python on **Windows**. It also covers environment variables, folder permissions, and common pitfalls. **RECOMMENDED:** If you don't entirely hate your life please look at the **docker_setup.md**, the process there is a lot more straightforward and will save you alot more time since i know you are not being paid anything extra for interviewing new people. The docker guide doubles as a setup for linux since the process is kinda the same on linux.
 
 ---
 

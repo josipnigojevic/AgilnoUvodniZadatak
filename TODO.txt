@@ -1,7 +1,6 @@
 popunit requirements.txt
 prominit hardkodiranu shemu da je vata priko infer scheme kod loadanja
 testirat jupyter notebook (i dodat instaliranje dependencya u pocetak fajla)
-napisat unit testove za funkcije za obradu
 definirat logiku za moj nekakav udf i implementirat je
 pomaknit svu logiku koja ne treba bit u mainu u odvojeni file koji sadrzi funkcije za obradu
 ako stignen: 

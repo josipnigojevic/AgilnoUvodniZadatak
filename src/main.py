@@ -260,7 +260,7 @@ def my_custom_udf(value):
 
 def main():
     spark = create_spark_session()
-    INPUT_PATH = r"src\\data\\StudentDepressionDataset.csv"
+    INPUT_PATH = "src/data/StudentDepressionDataset.csv"
     OUTPUT_PATH = "output"
 
 

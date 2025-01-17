@@ -40,6 +40,31 @@ schema = StructType([
     StructField("Depression", IntegerType(), True),
 ])
 
+@udf(FloatType())
+def parse_sleep_duration(raw: str) -> float:
+    """
+    Converts strings like "Less than 5 hours", "5-6 hours", 
+    "More than 8 hours" into numeric float values.
+    """
+    if raw is None:
+        return None
+    raw = raw.strip().lower()
+    if raw == "less than 5 hours":
+        return 4.0
+    elif raw == "more than 8 hours":
+        return 9.0
+    elif "-" in raw:
+        raw = raw.replace(" hours", "")
+        parts = raw.split("-")
+        if len(parts) == 2:
+            try:
+                low = float(parts[0])
+                high = float(parts[1])
+                return (low + high) / 2.0
+            except ValueError:
+                return None
+    return None
+
 def load_data(spark, input_path: str):
     try:
         df = (spark.read
@@ -58,9 +83,11 @@ def clean_data(df):
     convert Sleep Duration to numeric, etc.
     Returns cleaned DataFrame.
     """
+    
     df = df.dropna(subset=["Sleep Duration", "Age"])
 
-    df = df.withColumn("Sleep Duration", col("Sleep Duration").cast(FloatType()))
+    
+    df = df.withColumn("Sleep Duration", parse_sleep_duration(col("Sleep Duration")))
     
     df = df.filter(col("Sleep Duration") <= 24).filter(col("Sleep Duration") >= 0)
     df = df.filter(col("Age") > 0)
@@ -73,10 +100,12 @@ def report_data_quality(df):
     Print out data quality metrics: null counts, value counts, basic statistics.
     In a real pipeline, these might be saved to a log or written to a table.
     """
+    
     for c in df.columns:
         null_count = df.filter(col(c).isNull()).count()
         print(f"{c}: {null_count} nulls")
 
+    
     numeric_cols = [f.name for f in df.schema.fields if f.dataType in [FloatType(), IntegerType()]]
     df.select(numeric_cols).describe().show()
 
@@ -122,9 +151,10 @@ def feature_engineering(df):
     for c in numeric_cols:
         min_val = stats[f"{c}_min"]
         max_val = stats[f"{c}_max"]
-        if min_val != max_val: 
+        if min_val != max_val:  
             df = df.withColumn(f"{c}_normalized", (col(c) - lit(min_val)) / (lit(max_val - min_val)))
         else:
+
             df = df.withColumn(f"{c}_normalized", lit(0.0))
 
     categories = [row[0] for row in df.select("Gender").distinct().collect()]
@@ -157,8 +187,10 @@ def distribution_analysis(df):
     2) CGPA stats by sleep category
     Return DataFrames for saving.
     """
+
     dep_by_demo = df.groupBy("age_group", "Profession") \
                     .agg(F.avg("Depression").alias("avg_depression"))
+
 
     cgpa_by_sleep = df.groupBy("sleep_category") \
                       .agg(F.avg("CGPA").alias("avg_cgpa"),
@@ -173,6 +205,7 @@ def correlation_analysis(df):
     - Top 5 factors correlated with depression scores
     """
     numeric_cols = [f.name for f in df.schema.fields if f.dataType in [FloatType(), IntegerType()]]
+
     corr_rows = []
     for i in range(len(numeric_cols)):
         for j in range(i+1, len(numeric_cols)):
@@ -229,14 +262,7 @@ def risk_analysis(df):
     high_risk_df = df.filter(
         (col("stress_index_normalized") > 0.7) |
         (col("Sleep Duration") < 5) |
-        (col("Financial Stress") > 7) 
+        (col("Financial Stress") > 7)  
     ).withColumn("risk_reason", lit("Stress or Poor Sleep or High Financial Stress"))
 
     return high_risk_df
-
-    
-
-@udf(returnType=StringType())
-def my_custom_udf(value):
-    # Neka logika, vidit cu sta bi bilo baza
-    return "transformed_value"

@@ -19,7 +19,7 @@ docker run -it my-spark-image:latest
 Inside the container, your project files will be located in /app.
 
 ## 3. Execute the Spark Job
-From inside the running container, navigate to the source directory and run:
+From inside the running container run:
 
 ```
 spark-submit src/main.py

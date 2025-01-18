@@ -12,7 +12,7 @@ from src.DataProcessor import (
     correlation_analysis,
     aggregations,
     risk_analysis,
-    my_custom_udf,
+    parse_sleep_duration,
     schema,
 )
 
@@ -182,16 +182,24 @@ def test_risk_analysis(spark):
     assert "risk_reason" in df_risk.columns
 
 
-def test_my_custom_udf(spark):
+def test_parse_sleep_duration(spark):
+    test_data = [
+        ("Less than 5 hours", 4.0),
+        ("5-6 hours", 5.5),
+        ("More than 8 hours", 9.0),
+        (None, None),
+        ("invalid input", None),
+        ("6-7 hours", 6.5),
+        (" 7-8 hours ", 7.5),
+    ]
 
-    test_df = spark.createDataFrame([(10,), (20,), (None,)], ["value"])
+    test_df = spark.createDataFrame(test_data, ["raw_input", "expected_output"])
 
+    result_df = test_df.withColumn("parsed_output", parse_sleep_duration(col("raw_input")))
 
-    result_df = test_df.withColumn("transformed", my_custom_udf(col("value")))
-
-
-    results = result_df.select("transformed").collect()
-
+    results = result_df.select("expected_output", "parsed_output").collect()
 
     for row in results:
-        assert row["transformed"] == "transformed_value"
+        assert row["expected_output"] == row["parsed_output"], \
+            f"Expected {row['expected_output']}, but got {row['parsed_output']} for input '{row['raw_input']}'"
+

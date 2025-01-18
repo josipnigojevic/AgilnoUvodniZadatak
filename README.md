@@ -241,3 +241,11 @@ By following these **foolproof** steps, you should have:
 - No “Access is denied” errors, no “winutils.exe not found,” and data files loaded successfully.
 
 You can now develop PySpark applications, run `spark-submit` jobs, and enjoy a fully functional local Spark environment on Windows.
+
+## 13. Running the spark job
+
+in the project root run 
+
+```
+spark-submit src/main.py
+```

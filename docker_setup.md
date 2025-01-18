@@ -1,8 +1,12 @@
 # Quick Guide: Building and Running Your Spark Docker Image
 
+## Before you begin
+
+Download docker from https://www.docker.com/
+
 ## 1. Build the Image
 
-Make sure your **Dockerfile** is in the project root. Then, in a terminal from that directory:
+Make sure you are in the project root. Then, in a terminal from that directory:
 
 ```bash
 docker build -t my-spark-image:latest .

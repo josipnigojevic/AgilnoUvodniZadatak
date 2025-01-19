@@ -113,6 +113,7 @@ python --version
 Should display `Python 3.10.x`.
 
 > **Tip**: If you prefer Conda/Miniconda, that’s fine. Just ensure your environment variables point to `C:\Miniconda3\envs\spark\python.exe` or similar.
+> **Tip**: Install all dependencies from the requirements with `pip install -r requirements.txt`
 
 ---
 

@@ -2,13 +2,13 @@
 # Dockerfile: Bundled environment with Java, Hadoop, Spark, and Python + PySpark
 # (plus the code for this assignment)
 # -------------------------------------------------------------------------
-# This Docker image will include:
+# This Docker image includes:
 #   - OpenJDK 8
 #   - Hadoop 3.x (with HADOOP_HOME)
 #   - Spark 3.x (with SPARK_HOME)
 #   - Python 3 + pip
 #   - PySpark
-#   - Your entire project folder (copied into /app)
+#   - The entire project folder (copied into /app)
 #
 # Made by Josip Nigojević
 # -------------------------------------------------------------------------

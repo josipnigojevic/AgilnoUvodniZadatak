@@ -42,6 +42,12 @@ def test_load_data(spark):
     assert expected_columns == actual_columns
 
 def test_clean_data(spark):
+    """
+    Test the clean_data function to ensure:
+    - It handles missing values appropriately.
+    - The "Sleep Duration" column is correctly parsed into numeric values.
+    - The cleaned DataFrame contains the expected number of rows and valid data.
+    """
     sample_data = [
         Row(id=1, Gender="Male", Age=20.0, City="CityA", Profession="Student",
             **{"Academic Pressure": 5.0, "Work Pressure": 4.0, "CGPA": 3.1,
@@ -69,7 +75,12 @@ def test_clean_data(spark):
 
 
 def test_distribution_analysis(spark):
-
+    """
+    Test the distribution_analysis function to verify:
+    - The output DataFrames have the correct columns.
+    - Depression averages are grouped correctly by age group and profession.
+    - CGPA statistics (average and standard deviation) are grouped by sleep category.
+    """
     sample_data = [
         {
             "id": 1, "Gender": "Male", "Age": 20.0, "City": "CityA", "Profession": "Student",
@@ -104,7 +115,12 @@ def test_distribution_analysis(spark):
 
 
 def test_correlation_analysis(spark):
-
+    """
+    Test the correlation_analysis function to confirm:
+    - The correlation matrix is computed for all numeric columns.
+    - The function correctly identifies the top 5 correlations with depression.
+    - The output DataFrame contains the correct columns and valid results.
+    """
     sample_data = [
         {
             "id": 1, "Gender": "Male", "Age": 20.0, "City": "CityA", "Profession": "Student",
@@ -138,7 +154,13 @@ def test_correlation_analysis(spark):
 
 
 def test_aggregations(spark):
-
+    """
+    Test the aggregations function to validate:
+    - Depression scores are correctly aggregated by city and degree.
+    - Stress indices are correctly averaged by age group and gender.
+    - Academic performance metrics are correctly computed by sleep category.
+    - The output DataFrames have the expected columns.
+    """
     sample_data = [
         {
             "id": 1, "Gender": "Male", "Age": 20.0, "City": "CityA", "Profession": "Student",
@@ -174,7 +196,13 @@ def test_aggregations(spark):
 
 
 def test_risk_analysis(spark):
-
+    """
+    Test the risk_analysis function to ensure:
+    - Students at high risk are flagged based on stress index, sleep duration,
+      and financial stress.
+    - The output DataFrame includes a "risk_reason" column.
+    - The function correctly identifies high-risk students with valid data.
+    """
     sample_data = [
         {
             "id": 1, "Gender": "Male", "Age": 20.0, "City": "CityA", "Profession": "Student",
@@ -209,6 +237,13 @@ def test_risk_analysis(spark):
 
 
 def test_feature_engineering(spark):
+    """
+    Test the feature_engineering function to check:
+    - New columns like "stress_index," "sleep_category," and "age_group" are correctly created.
+    - Numeric columns are normalized as expected.
+    - Dummy variables are created for categorical columns like "Gender."
+    - The engineered DataFrame contains all expected features with valid values.
+    """
     sample_data = [
         Row(id=1, Gender="Male", Age=20.0, City="CityA", Profession="Student",
             **{"Academic Pressure": 6.0, "Work Pressure": 3.0, "Financial Stress": 9.0,
@@ -248,6 +283,13 @@ def test_feature_engineering(spark):
 
 
 def test_parse_sleep_duration(spark):
+    """
+    Test the parse_sleep_duration function to validate:
+    - Various formats of sleep duration strings (e.g., "5-6 hours", "Less than 5 hours")
+      are correctly parsed into numeric values.
+    - Invalid or missing inputs return None as expected.
+    - The parsed values match the expected output for each test case.
+    """
     test_data = [
         ("Less than 5 hours", 4.0),
         ("5-6 hours", 5.5),

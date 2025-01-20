@@ -1,2 +1,0 @@
-testirat jupyter notebook (i dodat instaliranje dependencya u pocetak fajla)
-

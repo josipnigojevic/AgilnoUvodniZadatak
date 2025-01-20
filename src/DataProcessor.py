@@ -11,12 +11,17 @@ def create_spark_session(app_name="StudentMentalHealth"):
     """
     Creates and returns a SparkSession with recommended configs.
     """
-    return (
-        SparkSession.builder
-        .appName(app_name)
-        .config("spark.sql.parquet.compression.codec", "snappy")
-        .getOrCreate()
-    )
+    try:
+        spark = (
+            SparkSession.builder
+            .appName(app_name)
+            .config("spark.sql.parquet.compression.codec", "snappy")
+            .getOrCreate()
+        )
+        return spark
+    except Exception as e:
+        print(f"Error creating Spark session: {e}")
+        sys.exit(1)
 
 
 schema = StructType([
@@ -84,15 +89,14 @@ def clean_data(df):
     Returns cleaned DataFrame.
     """
     
-    df = df.dropna(subset=["Sleep Duration", "Age"])
-
-    
-    df = df.withColumn("Sleep Duration", parse_sleep_duration(col("Sleep Duration")))
-    
-    df = df.filter(col("Sleep Duration") <= 24).filter(col("Sleep Duration") >= 0)
-    df = df.filter(col("Age") > 0)
-
-    return df
+    try:
+        df = df.dropna(subset=["Sleep Duration", "Age"])
+        df = df.withColumn("Sleep Duration", parse_sleep_duration(col("Sleep Duration")))
+        df = df.filter(col("Sleep Duration") <= 24).filter(col("Sleep Duration") >= 0)
+        df = df.filter(col("Age") > 0)
+        return df
+    except Exception as e:
+        print(f"Error in clean_data: {e}")
 
 
 def report_data_quality(df):
@@ -100,14 +104,16 @@ def report_data_quality(df):
     Print out data quality metrics: null counts, value counts, basic statistics.
     In a real pipeline, these might be saved to a log or written to a table.
     """
-    
-    for c in df.columns:
-        null_count = df.filter(col(c).isNull()).count()
-        print(f"{c}: {null_count} nulls")
+    try:
+        for c in df.columns:
+            null_count = df.filter(col(c).isNull()).count()
+            print(f"{c}: {null_count} nulls")
 
-    
-    numeric_cols = [f.name for f in df.schema.fields if f.dataType in [FloatType(), IntegerType()]]
-    df.select(numeric_cols).describe().show()
+
+        numeric_cols = [f.name for f in df.schema.fields if f.dataType in [FloatType(), IntegerType()]]
+        df.select(numeric_cols).describe().show()
+    except Exception as e:
+        print(f"Error in data quality report: {e}")
 
 
 def feature_engineering(df):
@@ -120,51 +126,53 @@ def feature_engineering(df):
       - dummy variables for categorical columns
     Returns a feature-engineered DataFrame.
     """
-
-    df = df.withColumn(
-        "stress_index",
-        (col("Academic Pressure") + col("Work Pressure") + col("Financial Stress")) / lit(3.0)
-    )
-
-    df = df.withColumn(
-        "sleep_category",
-        when(col("Sleep Duration") < 6, lit("Low"))
-        .when((col("Sleep Duration") >= 6) & (col("Sleep Duration") <= 8), lit("Normal"))
-        .otherwise(lit("High"))
-    )
-
-    df = df.withColumn(
-        "age_group",
-        when((col("Age") >= 18) & (col("Age") <= 21), lit("18-21"))
-        .when((col("Age") >= 22) & (col("Age") <= 25), lit("22-25"))
-        .when((col("Age") >= 26) & (col("Age") <= 30), lit("26-30"))
-        .otherwise(lit(">30"))
-    )
-
-    numeric_cols = ["CGPA", "Depression", "stress_index"]
-    stats = df.select(
-        *[F.min(c).alias(f"{c}_min") for c in numeric_cols],
-        *[F.max(c).alias(f"{c}_max") for c in numeric_cols]
-    ).collect()[0]
-
-
-    for c in numeric_cols:
-        min_val = stats[f"{c}_min"]
-        max_val = stats[f"{c}_max"]
-        if min_val != max_val:  
-            df = df.withColumn(f"{c}_normalized", (col(c) - lit(min_val)) / (lit(max_val - min_val)))
-        else:
-
-            df = df.withColumn(f"{c}_normalized", lit(0.0))
-
-    categories = [row[0] for row in df.select("Gender").distinct().collect()]
-    for cat in categories:
+    try:
         df = df.withColumn(
-            f"Gender_{cat}",
-            when(col("Gender") == cat, lit(1)).otherwise(lit(0))
+            "stress_index",
+            (col("Academic Pressure") + col("Work Pressure") + col("Financial Stress")) / lit(3.0)
         )
 
-    return df
+        df = df.withColumn(
+            "sleep_category",
+            when(col("Sleep Duration") < 6, lit("Low"))
+            .when((col("Sleep Duration") >= 6) & (col("Sleep Duration") <= 8), lit("Normal"))
+            .otherwise(lit("High"))
+        )
+
+        df = df.withColumn(
+            "age_group",
+            when((col("Age") >= 18) & (col("Age") <= 21), lit("18-21"))
+            .when((col("Age") >= 22) & (col("Age") <= 25), lit("22-25"))
+            .when((col("Age") >= 26) & (col("Age") <= 30), lit("26-30"))
+            .otherwise(lit(">30"))
+        )
+
+        numeric_cols = ["CGPA", "Depression", "stress_index"]
+        stats = df.select(
+            *[F.min(c).alias(f"{c}_min") for c in numeric_cols],
+            *[F.max(c).alias(f"{c}_max") for c in numeric_cols]
+        ).collect()[0]
+
+
+        for c in numeric_cols:
+            min_val = stats[f"{c}_min"]
+            max_val = stats[f"{c}_max"]
+            if min_val != max_val:  
+                df = df.withColumn(f"{c}_normalized", (col(c) - lit(min_val)) / (lit(max_val - min_val)))
+            else:
+
+                df = df.withColumn(f"{c}_normalized", lit(0.0))
+
+        categories = [row[0] for row in df.select("Gender").distinct().collect()]
+        for cat in categories:
+            df = df.withColumn(
+                f"Gender_{cat}",
+                when(col("Gender") == cat, lit(1)).otherwise(lit(0))
+            )
+
+        return df
+    except Exception as e:
+        print(f"Error in feature engineering : {e}")
 
 
 def save_parquet(df, output_path: str, partition_col: str = None):
@@ -187,16 +195,18 @@ def distribution_analysis(df):
     2) CGPA stats by sleep category
     Return DataFrames for saving.
     """
+    try:
+        dep_by_demo = df.groupBy("age_group", "Profession") \
+                        .agg(F.avg("Depression").alias("avg_depression"))
 
-    dep_by_demo = df.groupBy("age_group", "Profession") \
-                    .agg(F.avg("Depression").alias("avg_depression"))
 
+        cgpa_by_sleep = df.groupBy("sleep_category") \
+                          .agg(F.avg("CGPA").alias("avg_cgpa"),
+                               F.stddev("CGPA").alias("stddev_cgpa"))
 
-    cgpa_by_sleep = df.groupBy("sleep_category") \
-                      .agg(F.avg("CGPA").alias("avg_cgpa"),
-                           F.stddev("CGPA").alias("stddev_cgpa"))
-
-    return dep_by_demo, cgpa_by_sleep
+        return dep_by_demo, cgpa_by_sleep
+    except Exception as e:
+        print(f"Error in distribution analysis: {e}")
 
 
 def correlation_analysis(df):
@@ -204,28 +214,31 @@ def correlation_analysis(df):
     - Compute correlation matrix among numeric columns
     - Top 5 factors correlated with depression scores
     """
-    numeric_cols = [f.name for f in df.schema.fields if f.dataType in [FloatType(), IntegerType()]]
+    try:
+        numeric_cols = [f.name for f in df.schema.fields if f.dataType in [FloatType(), IntegerType()]]
 
-    corr_rows = []
-    for i in range(len(numeric_cols)):
-        for j in range(i+1, len(numeric_cols)):
-            col1 = numeric_cols[i]
-            col2 = numeric_cols[j]
-            corr_val = df.stat.corr(col1, col2)
-            corr_rows.append((col1, col2, corr_val))
+        corr_rows = []
+        for i in range(len(numeric_cols)):
+            for j in range(i+1, len(numeric_cols)):
+                col1 = numeric_cols[i]
+                col2 = numeric_cols[j]
+                corr_val = df.stat.corr(col1, col2)
+                corr_rows.append((col1, col2, corr_val))
 
-    correlation_df = df.sparkSession.createDataFrame(
-        corr_rows, ["column1", "column2", "correlation"]
-    )
+        correlation_df = df.sparkSession.createDataFrame(
+            corr_rows, ["column1", "column2", "correlation"]
+        )
 
-    depression_corr = correlation_df \
-        .filter((F.col("column1") == "Depression") | (F.col("column2") == "Depression")) \
-        .withColumn("abs_corr", F.abs(F.col("correlation"))) \
-        .orderBy(F.col("abs_corr").desc())
+        depression_corr = correlation_df \
+            .filter((F.col("column1") == "Depression") | (F.col("column2") == "Depression")) \
+            .withColumn("abs_corr", F.abs(F.col("correlation"))) \
+            .orderBy(F.col("abs_corr").desc())
 
-    top5_dep_corr = depression_corr.limit(5)
+        top5_dep_corr = depression_corr.limit(5)
 
-    return correlation_df, top5_dep_corr
+        return correlation_df, top5_dep_corr
+    except Exception as e:
+        print(f"Error in correlation analysis: {e}")
 
 
 def aggregations(df):
@@ -234,19 +247,21 @@ def aggregations(df):
     - Stress index aggregated by age group and gender
     - Academic performance metrics by sleep category (reuse or expand)
     """
+    try:
+        city_degree_stats = df.groupBy("City", "Degree") \
+                              .agg(F.avg("Depression").alias("avg_depression"),
+                                   F.count("*").alias("count_students"))
 
-    city_degree_stats = df.groupBy("City", "Degree") \
-                          .agg(F.avg("Depression").alias("avg_depression"),
-                               F.count("*").alias("count_students"))
+        demographic_stress = df.groupBy("age_group", "Gender") \
+                               .agg(F.avg("stress_index").alias("avg_stress_index"))
 
-    demographic_stress = df.groupBy("age_group", "Gender") \
-                           .agg(F.avg("stress_index").alias("avg_stress_index"))
+        sleep_performance = df.groupBy("sleep_category") \
+                              .agg(F.avg("CGPA").alias("avg_cgpa"),
+                                   F.avg("Academic Pressure").alias("avg_academic_score"))
 
-    sleep_performance = df.groupBy("sleep_category") \
-                          .agg(F.avg("CGPA").alias("avg_cgpa"),
-                               F.avg("Academic Pressure").alias("avg_academic_score"))
-
-    return city_degree_stats, demographic_stress, sleep_performance
+        return city_degree_stats, demographic_stress, sleep_performance
+    except Exception as e:
+        print(f"Error in aggregations: {e}")
 
 
 def risk_analysis(df):
@@ -258,11 +273,13 @@ def risk_analysis(df):
     - financial stress
     Returns a DataFrame of flagged students
     """
+    try:
+        high_risk_df = df.filter(
+            (col("stress_index_normalized") > 0.7) |
+            (col("Sleep Duration") < 5) |
+            (col("Financial Stress") > 7)  
+        ).withColumn("risk_reason", lit("Stress or Poor Sleep or High Financial Stress"))
 
-    high_risk_df = df.filter(
-        (col("stress_index_normalized") > 0.7) |
-        (col("Sleep Duration") < 5) |
-        (col("Financial Stress") > 7)  
-    ).withColumn("risk_reason", lit("Stress or Poor Sleep or High Financial Stress"))
-
-    return high_risk_df
+        return high_risk_df
+    except Exception as e:
+        print(f"Error in risk analysis: {e}")
